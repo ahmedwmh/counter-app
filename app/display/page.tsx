@@ -9,6 +9,7 @@ export default function DisplayPage() {
     const [currentCustomer, setCurrentCustomer] = useState<any>(null);
     const [animation, setAnimation] = useState('');
     const [channel, setChannel] = useState<BroadcastChannel | null>(null);
+    const [soundEnabled, setSoundEnabled] = useState(false);
 
     // Initialize DB
     useEffect(() => {
@@ -20,6 +21,23 @@ export default function DisplayPage() {
         };
         initDB();
     }, []);
+
+    const enableSound = () => {
+        // Play a silent sound to unlock audio context
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+            const audioContext = new AudioContext();
+            audioContext.resume().then(() => {
+                setSoundEnabled(true);
+                // Optional: Speak a test phrase
+                const utterance = new SpeechSynthesisUtterance("تم تفعيل الصوت");
+                utterance.lang = 'ar-SA';
+                window.speechSynthesis.speak(utterance);
+            });
+        } else {
+            setSoundEnabled(true);
+        }
+    };
 
     const loadCustomers = async (database: QueueDB) => {
         const allCustomers = await database.getAll();
@@ -97,21 +115,36 @@ export default function DisplayPage() {
         return () => bc.close();
     }, [db]);
 
+    if (!soundEnabled) {
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-8 text-center" dir="rtl">
+                <div className="space-y-6">
+                    <div className="text-white text-2xl font-bold">يرجى النقر لتفعيل الصوت</div>
+                    <Button
+                        onClick={enableSound}
+                        size="lg"
+                        className="text-xl px-8 py-6"
+                    >
+                        تفعيل شاشة العرض
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-8">
             <div className="text-center">
                 <div className={`transition-all duration-500 ${animation === 'next' ? 'scale-110 opacity-0' :
-                    animation === 'repeat' ? 'animate-pulse' :
-                        animation === 'hold' ? 'opacity-30 scale-95' :
-                            'scale-100 opacity-100'
+                        animation === 'repeat' ? 'animate-pulse' :
+                            animation === 'hold' ? 'opacity-30 scale-95' :
+                                'scale-100 opacity-100'
                     }`}>
                     <div className="text-slate-500 text-4xl mb-8">الرقم الحالي</div>
                     <div style={{ fontSize: '650px' }} className="font-bold text-slate-900 leading-none">
                         {currentCustomer ? currentCustomer.number : '-'}
                     </div>
                 </div>
-
-
             </div>
         </div>
     );
